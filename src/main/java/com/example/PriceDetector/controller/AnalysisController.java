@@ -24,10 +24,12 @@ public class AnalysisController {
     private final AiClient aiClient;
 
 
-    @GetMapping("/test-ai")
-    public String testAi()
+
+
+    @PostMapping("/{id}/analyze")
+    public AnalysisResponse runAiAnalysis(@PathVariable Long id)
     {
-        return aiClient.analyze("How match does that Tom Ford glasses cost?");
+        return analysisService.runAiAnalysis(id);
     }
 
     @PostMapping

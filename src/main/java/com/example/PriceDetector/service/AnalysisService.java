@@ -17,6 +17,7 @@ import java.util.List;
 public class AnalysisService {
     private final AnalysisRepository repository;
     private final AnalysisMapper mapper;
+    private final AiClient aiClient;
 
     @Transactional
     public AnalysisResponse save(AnalysisRequest request)
@@ -40,6 +41,37 @@ public class AnalysisService {
     {
         return repository.findById(id)
             .orElseThrow(() -> new AnalysisNotFoundException(id));
+    }
+
+
+
+    private String buildPrompt(Analysis analysis)
+    {
+        return "Analyze this item for resale value:\n" +
+                "Brand: " + analysis.getItemBrand() + "\n" +
+                "Item name: " + analysis.getItemName() + "\n" +
+                "Category: " + analysis.getCategory() + "\n" +
+                "Condition: " + analysis.getCondition() + "\n" +
+                "Description: " + analysis.getDescription() + "\n" +
+                "Seller price: " + analysis.getSellerPrice() +
+                "Respond ONLY with valid JSON in this exact format:\n" +
+                "{\n" +
+                "  \"estimatedNewPrice\": <number>,\n" +
+                "  \"estimatedResalePrice\": <number>,\n" +
+                "  \"verdict\": \"BUY\" or \"DONT_BUY\" or \"NEGOTIATE\",\n" +
+                "  \"suggestedPrice\": <number>\n" +
+                "}";
+    }
+
+    @Transactional
+    public AnalysisResponse runAiAnalysis(Long id)
+    {
+        Analysis analysis = getAnalysis(id);
+        String prompt = buildPrompt(analysis);
+        String aiResponse = aiClient.analyze(prompt);
+        analysis.setAiRawResponse(aiResponse);
+         Analysis saved = repository.save(analysis);
+        return mapper.toResponse(saved);
     }
 
 

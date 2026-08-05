@@ -3,6 +3,7 @@ package com.example.PriceDetector.controller;
 
 import com.example.PriceDetector.dto.AnalysisRequest;
 import com.example.PriceDetector.dto.AnalysisResponse;
+import com.example.PriceDetector.service.AiClient;
 import com.example.PriceDetector.service.AnalysisService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +20,15 @@ import java.util.List;
 
 public class AnalysisController {
     private final AnalysisService analysisService;
+
+    private final AiClient aiClient;
+
+
+    @GetMapping("/test-ai")
+    public String testAi()
+    {
+        return aiClient.analyze("How match does that Tom Ford glasses cost?");
+    }
 
     @PostMapping
     public ResponseEntity<AnalysisResponse> save(@RequestBody @Valid AnalysisRequest request)

@@ -5,11 +5,15 @@ import com.example.PriceDetector.dto.AnalysisRequest;
 import com.example.PriceDetector.dto.AnalysisResponse;
 import com.example.PriceDetector.exception.AnalysisNotFoundException;
 import com.example.PriceDetector.model.Analysis;
+import com.example.PriceDetector.model.Verdict;
 import com.example.PriceDetector.repository.AnalysisRepository;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @Service
@@ -64,14 +68,63 @@ public class AnalysisService {
     }
 
     @Transactional
-    public AnalysisResponse runAiAnalysis(Long id)
-    {
+    public AnalysisResponse runAiAnalysis(Long id) throws Exception {
         Analysis analysis = getAnalysis(id);
+
         String prompt = buildPrompt(analysis);
+
         String aiResponse = aiClient.analyze(prompt);
+
+
         analysis.setAiRawResponse(aiResponse);
-         Analysis saved = repository.save(analysis);
+
+        JsonNode clearedRes = extractJsonFromAiResponse(aiResponse);
+
+        applyAiResults(analysis, clearedRes);
+
+        Analysis saved = repository.save(analysis);
+
         return mapper.toResponse(saved);
+    }
+
+    private JsonNode extractJsonFromAiResponse(String aiRawResponse) throws Exception
+    {
+        ObjectMapper mapper1 = new ObjectMapper();
+
+        JsonNode root = mapper1.readTree(aiRawResponse);
+
+        JsonNode contentArray = root.get("content");
+
+        JsonNode firstItem = contentArray.get(0);
+
+        String text = firstItem.get("text").asText();
+
+        String cleanedText = text.replace("```json", "").replace("```", "").trim();
+
+
+
+        return mapper1.readTree(cleanedText);
+
+
+    }
+
+    private void applyAiResults(Analysis analysis, JsonNode jsonNode)
+    {
+        Double newPrice = jsonNode.get("estimatedNewPrice").asDouble();
+        analysis.setEstimatedNewPrice(BigDecimal.valueOf(newPrice));
+
+        Double newResPrice = jsonNode.get("estimatedResalePrice").asDouble();
+        analysis.setEstimatedResalePrice(BigDecimal.valueOf(newResPrice));
+
+        String newVerdict = jsonNode.get("verdict").asText();
+        analysis.setVerdict(Verdict.valueOf(newVerdict));
+
+        Double newSugPrice = jsonNode.get("suggestedPrice").asDouble();
+        analysis.setSuggestedPrice(BigDecimal.valueOf(newSugPrice));
+
+
+
+
     }
 
 

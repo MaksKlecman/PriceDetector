@@ -25,7 +25,8 @@ public class AiClient
 
     private final RestClient restClient = RestClient.create();
 
-    public String analyze(String prompt) {
+    public String analyze(String prompt)
+    {
 
         Map<String, Object> requestBody = Map.of(
                 "model", model,

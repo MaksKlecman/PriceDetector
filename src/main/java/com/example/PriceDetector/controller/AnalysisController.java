@@ -27,8 +27,8 @@ public class AnalysisController {
 
 
     @PostMapping("/{id}/analyze")
-    public AnalysisResponse runAiAnalysis(@PathVariable Long id)
-    {
+    public AnalysisResponse runAiAnalysis(@PathVariable Long id) throws Exception {
+
         return analysisService.runAiAnalysis(id);
     }
 

@@ -50,6 +50,9 @@ public class Analysis {
     @Column(columnDefinition = "TEXT")
     private String aiRawResponse;
 
+    @Enumerated(EnumType.STRING)
+    private AuthenticResult authenticResult;
+
 
 
 

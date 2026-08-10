@@ -53,6 +53,47 @@ public class AiClient
 
     }
 
+    public String analyzeWithPhoto(String prompt, String base64Image)
+    {
+        Map<String, Object> requestPhoto = Map.of(
+
+                "model", model,
+                "max_tokens", 1024,
+                "messages", List.of(
+                        Map.of("role", "user", "content", List.of(
+                                Map.of("type", "text", "text", prompt),
+                                Map.of("type", "image", "source", Map.of(
+                                        "type", "base64",
+                                        "media_type", "image/jpeg",
+                                        "data", base64Image
+                                ))
+                        ))
+                )
+
+
+        );
+
+        return restClient.post()
+                .uri("https://api.anthropic.com/v1/messages")
+
+                .header("x-api-key", apiKey)
+
+                .header("anthropic-version", "2023-06-01")
+
+                .header("content-type", "application/json")
+
+                .body(requestPhoto)
+
+                .retrieve()
+
+                .body(String.class);
+
+
+
+    }
+
+
+
 
 
 

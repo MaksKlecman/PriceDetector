@@ -1,5 +1,6 @@
 package com.example.PriceDetector.dto;
 
+import com.example.PriceDetector.model.AuthenticResult;
 import com.example.PriceDetector.model.Category;
 import com.example.PriceDetector.model.Verdict;
 import lombok.Data;
@@ -41,5 +42,7 @@ public class AnalysisResponse {
 
 
     private String aiRawResponse;
+
+    private AuthenticResult authenticResult;
 
 }

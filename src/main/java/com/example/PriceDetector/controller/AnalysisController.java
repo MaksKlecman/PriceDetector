@@ -11,6 +11,7 @@ import org.springframework.boot.autoconfigure.graphql.GraphQlProperties;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -30,6 +31,12 @@ public class AnalysisController {
     public AnalysisResponse runAiAnalysis(@PathVariable Long id) throws Exception {
 
         return analysisService.runAiAnalysis(id);
+    }
+
+    @PostMapping("/{id}/analyze-photo")
+    public AnalysisResponse runAiAnalysisWithPhoto(@PathVariable Long id, @RequestParam("file")MultipartFile file) throws Exception {
+
+        return analysisService.runAiAnalysisWithPhoto(id, file);
     }
 
     @PostMapping

@@ -55,31 +55,48 @@ public class AnalysisService {
 
     private String buildPrompt(Analysis analysis)
     {
+        String notesLine = "";
+        if (analysis.getAdditionalNotes() != null && !analysis.getAdditionalNotes().isEmpty())
+        {
+            notesLine = "Additional notes from user: " + analysis.getAdditionalNotes() + "\n";
+        }
+
+
         return "Analyze this item for resale value:\n" +
                 "Brand: " + analysis.getItemBrand() + "\n" +
                 "Item name: " + analysis.getItemName() + "\n" +
                 "Category: " + analysis.getCategory() + "\n" +
                 "Condition: " + analysis.getCondition() + "\n" +
                 "Description: " + analysis.getDescription() + "\n" +
-                "Seller price: " + analysis.getSellerPrice() +
+                "Seller price: " + analysis.getSellerPrice() + "\n" +
+                notesLine +
                 "Respond ONLY with valid JSON in this exact format:\n" +
                 "{\n" +
                 "  \"estimatedNewPrice\": <number>,\n" +
                 "  \"estimatedResalePrice\": <number>,\n" +
                 "  \"verdict\": \"BUY\" or \"DONT_BUY\" or \"NEGOTIATE\",\n" +
                 "  \"suggestedPrice\": <number>\n" +
+
                 "}";
     }
 
     private String buildPromptWithPhoto(Analysis analysis)
     {
+        String notesLine = "";
+        if (analysis.getAdditionalNotes() != null && !analysis.getAdditionalNotes().isEmpty())
+        {
+            notesLine = "Additional notes from user: " + analysis.getAdditionalNotes() + "\n";
+        }
+
         return "Analyze this item for resale value:\n" +
                 "Brand: " + analysis.getItemBrand() + "\n" +
                 "Item name: " + analysis.getItemName() + "\n" +
                 "Category: " + analysis.getCategory() + "\n" +
                 "Condition: " + analysis.getCondition() + "\n" +
                 "Description: " + analysis.getDescription() + "\n" +
-                "Seller price: " + analysis.getSellerPrice() +
+                "Seller price: " + analysis.getSellerPrice() + "\n" +
+                notesLine +
+
                 "Respond ONLY with valid JSON in this exact format:\n" +
                 "{\n" +
                 "  \"estimatedNewPrice\": <number>,\n" +
@@ -87,6 +104,7 @@ public class AnalysisService {
                 "  \"verdict\": \"BUY\" or \"DONT_BUY\" or \"NEGOTIATE\",\n" +
                 "  \"suggestedPrice\": <number>,\n" +
                 "  \"authenticResult\": \"FAKE\" or \" NOT_ENOUGH_INFORMATION\" or \"ORIGINAL\" " +
+
                 "}";
     }
 
@@ -170,6 +188,8 @@ public class AnalysisService {
 
         Double newSugPrice = jsonNode.get("suggestedPrice").asDouble();
         analysis.setSuggestedPrice(BigDecimal.valueOf(newSugPrice));
+
+
 
 
 

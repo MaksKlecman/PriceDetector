@@ -2,6 +2,7 @@ package com.example.PriceDetector.dto;
 
 import com.example.PriceDetector.model.Category;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.validation.constraints.Max;
@@ -36,4 +37,6 @@ public class AnalysisRequest {
      @Min(value = 0, message = "price of item must be grater than 0")
     @Max(value = 99999, message = "price of item must be lower than 99999")
     private BigDecimal sellerPrice;
+
+     private String additionalNotes;
 }

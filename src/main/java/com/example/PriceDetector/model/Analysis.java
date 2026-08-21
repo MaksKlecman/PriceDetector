@@ -53,6 +53,9 @@ public class Analysis {
     @Enumerated(EnumType.STRING)
     private AuthenticResult authenticResult;
 
+    @Column(columnDefinition = "TEXT")
+    private String additionalNotes;
+
 
 
 

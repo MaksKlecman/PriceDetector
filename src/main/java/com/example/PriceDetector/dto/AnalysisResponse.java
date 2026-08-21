@@ -45,4 +45,6 @@ public class AnalysisResponse {
 
     private AuthenticResult authenticResult;
 
+    private String additionalNotes;
+
 }

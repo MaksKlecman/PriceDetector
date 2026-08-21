@@ -24,6 +24,7 @@ public class AnalysisMapper {
         response.setSuggestedPrice(analysis.getSuggestedPrice());
         response.setAiRawResponse(analysis.getAiRawResponse());
         response.setAuthenticResult(analysis.getAuthenticResult());
+        response.setAdditionalNotes(analysis.getAdditionalNotes());
         return response;
     }
 
@@ -48,6 +49,7 @@ public class AnalysisMapper {
         analysis.setCondition(request.getCondition());
         analysis.setDescription(request.getDescription());
         analysis.setSellerPrice(request.getSellerPrice());
+        analysis.setAdditionalNotes(request.getAdditionalNotes());
         return analysis;
 
     }

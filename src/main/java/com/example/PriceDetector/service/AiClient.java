@@ -6,12 +6,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-
-
-import org.springframework.stereotype.Component;
 
 @Component
 public class AiClient
@@ -53,25 +51,35 @@ public class AiClient
 
     }
 
-    public String analyzeWithPhoto(String prompt, String base64Image)
+    public String analyzeWithPhoto(String prompt, List<String> base64Image)
     {
-        Map<String, Object> requestPhoto = Map.of(
+        List<Map<String, Object>> contentList = new ArrayList<>();
+        contentList.add(Map.of("type", "text", "text", prompt));
+
+        for (int i = 0; i < base64Image.size(); i++)
+        {
+            contentList.add(Map.of("type", "image", "source",Map.of(
+                    "type", "base64",
+                    "media_type", "image/jpeg",
+                    "data", base64Image.get(i)
+            )));
+
+        }
+
+
+
+
+        Map<String, Object> requestPhoto = Map.of
+                (
 
                 "model", model,
                 "max_tokens", 1024,
                 "messages", List.of(
-                        Map.of("role", "user", "content", List.of(
-                                Map.of("type", "text", "text", prompt),
-                                Map.of("type", "image", "source", Map.of(
-                                        "type", "base64",
-                                        "media_type", "image/jpeg",
-                                        "data", base64Image
-                                ))
-                        ))
-                )
+                        Map.of("role", "user", "content", contentList)
+                ));
 
 
-        );
+
 
         return restClient.post()
                 .uri("https://api.anthropic.com/v1/messages")

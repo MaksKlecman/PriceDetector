@@ -34,9 +34,9 @@ public class AnalysisController {
     }
 
     @PostMapping("/{id}/analyze-photo")
-    public AnalysisResponse runAiAnalysisWithPhoto(@PathVariable Long id, @RequestParam("file")MultipartFile file) throws Exception {
+    public AnalysisResponse runAiAnalysisWithPhoto(@PathVariable Long id, @RequestParam("files") List<MultipartFile> files) throws Exception {
 
-        return analysisService.runAiAnalysisWithPhoto(id, file);
+        return analysisService.runAiAnalysisWithPhoto(id,  files);
     }
 
     @PostMapping

@@ -17,6 +17,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 
@@ -128,15 +129,23 @@ public class AnalysisService {
         return mapper.toResponse(saved);
     }
 
-    public AnalysisResponse runAiAnalysisWithPhoto(Long id, MultipartFile file) throws Exception
+    public AnalysisResponse runAiAnalysisWithPhoto(Long id, List<MultipartFile> files) throws Exception
     {
         Analysis analysis = getAnalysis(id);
 
-        String base64Image = Base64.getEncoder().encodeToString(file.getBytes());
+        List<String> base64Images = new ArrayList<>();
+
+        for (int i = 0; i < files.size(); i++)
+        {
+            String rep = Base64.getEncoder().encodeToString(files.get(i).getBytes());
+            base64Images.add(rep);
+        }
+
+
 
         String prompt = buildPromptWithPhoto(analysis);
 
-        String aiResponsePhoto = aiClient.analyzeWithPhoto(prompt, base64Image);
+        String aiResponsePhoto = aiClient.analyzeWithPhoto(prompt, base64Images);
 
         analysis.setAiRawResponse(aiResponsePhoto);
 

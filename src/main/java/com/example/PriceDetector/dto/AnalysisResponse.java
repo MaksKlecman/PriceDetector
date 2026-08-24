@@ -10,6 +10,8 @@ import java.math.BigDecimal;
 @Data
 public class AnalysisResponse {
 
+    private Long id;
+
     private String itemBrand;
 
 

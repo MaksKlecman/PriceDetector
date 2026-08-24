@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PriceDetector — Check Before You Buy </title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Special+Elite&family=Courier+Prime:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --paper: #F2EDE1;
+    --paper-dark: #E8E0CE;
+    --ink: #1A1A1A;
+    --ink-soft: #4A4A45;
+    --brown: #8B6F47;
+    --green: #2D6A4F;
+    --red: #9D2933;
+    --line: #C9BFA5;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: #3A342A;
+    background-image:
+      radial-gradient(ellipse at top, #4A4238, #2A251E);
+    font-family: 'Courier Prime', monospace;
+    color: var(--ink);
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 48px 16px 96px;
+  }
+
+  .receipt-wrap {
+    width: 100%;
+    max-width: 460px;
+  }
+
+  .receipt {
+    background: var(--paper);
+    background-image: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 27px,
+      rgba(0,0,0,0.02) 27px,
+      rgba(0,0,0,0.02) 28px
+    );
+    padding: 36px 30px 28px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.5), 0 2px 0 rgba(255,255,255,0.1) inset;
+    position: relative;
+  }
+
+  .receipt::before,
+  .receipt::after {
+    content: "";
+    position: absolute;
+    left: 0; right: 0;
+    height: 14px;
+    background:
+      radial-gradient(circle at 10px 7px, transparent 7px, var(--paper) 7.5px) repeat-x;
+    background-size: 20px 14px;
+  }
+  .receipt::before { top: -7px; }
+  .receipt::after { bottom: -7px; transform: rotate(180deg); }
+
+  .brand {
+    text-align: center;
+    font-family: 'Special Elite', cursive;
+    letter-spacing: 2px;
+    margin-bottom: 4px;
+  }
+  .brand-main {
+    font-size: 26px;
+    display: block;
+  }
+  .brand-sub {
+    font-size: 11px;
+    color: var(--ink-soft);
+    letter-spacing: 3px;
+    display: block;
+    margin-top: 2px;
+  }
+
+  .divider {
+    border: none;
+    border-top: 2px dashed var(--line);
+    margin: 20px 0;
+  }
+  .divider.tight { margin: 14px 0; }
+
+  .meta-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: var(--ink-soft);
+    margin-bottom: 2px;
+  }
+
+  h2.section-title {
+    font-family: 'Special Elite', cursive;
+    font-size: 14px;
+    letter-spacing: 1px;
+    margin: 0 0 14px;
+    text-transform: uppercase;
+  }
+
+  .field {
+    margin-bottom: 14px;
+  }
+  .field label {
+    display: block;
+    font-size: 11px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--brown);
+    margin-bottom: 4px;
+  }
+  .field input,
+  .field select,
+  .field textarea {
+    width: 100%;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--line);
+    font-family: 'Courier Prime', monospace;
+    font-size: 14px;
+    color: var(--ink);
+    padding: 4px 2px;
+    outline: none;
+  }
+  .field input:focus,
+  .field select:focus,
+  .field textarea:focus {
+    border-bottom: 1px solid var(--ink);
+  }
+  .field textarea { resize: vertical; min-height: 44px; }
+
+  .field-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+
+  .file-field {
+    margin-bottom: 14px;
+  }
+  .file-field label {
+    display: block;
+    font-size: 11px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--brown);
+    margin-bottom: 6px;
+  }
+  .file-field input[type="file"] {
+    font-family: 'Courier Prime', monospace;
+    font-size: 12px;
+    width: 100%;
+  }
+
+  .btn {
+    display: block;
+    width: 100%;
+    background: var(--ink);
+    color: var(--paper);
+    border: none;
+    font-family: 'Special Elite', cursive;
+    font-size: 14px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 14px;
+    cursor: pointer;
+    margin-top: 6px;
+    transition: transform 0.08s ease, background 0.2s ease;
+  }
+  .btn:hover { background: #000; }
+  .btn:active { transform: scale(0.98); }
+  .btn.secondary {
+    background: transparent;
+    color: var(--ink);
+    border: 1px solid var(--ink);
+  }
+  .btn.secondary:hover { background: rgba(0,0,0,0.05); }
+  .btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .btn-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 6px;
+  }
+
+  #status {
+    text-align: center;
+    font-size: 12px;
+    color: var(--ink-soft);
+    margin-top: 12px;
+    min-height: 16px;
+    letter-spacing: 0.5px;
+  }
+  #status.error { color: var(--red); }
+
+  /* ---- Result ---- */
+  #result-panel { display: none; }
+
+  .stamp {
+    display: inline-block;
+    font-family: 'Special Elite', cursive;
+    font-size: 22px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    border: 4px solid currentColor;
+    padding: 10px 20px;
+    transform: rotate(-4deg);
+    margin: 12px 0 20px;
+  }
+  .stamp-wrap { text-align: center; }
+  .stamp.buy { color: var(--green); }
+  .stamp.negotiate { color: var(--brown); }
+  .stamp.dont-buy { color: var(--red); }
+
+  .price-line {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-size: 14px;
+    padding: 6px 0;
+    border-bottom: 1px dotted var(--line);
+  }
+  .price-line .label { color: var(--ink-soft); }
+  .price-line .value { font-weight: 700; }
+  .price-line.total {
+    border-bottom: none;
+    border-top: 2px solid var(--ink);
+    margin-top: 8px;
+    padding-top: 10px;
+    font-size: 16px;
+  }
+
+  .auth-badge {
+    display: inline-block;
+    font-size: 11px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 3px 10px;
+    border: 1px solid currentColor;
+    margin-top: 4px;
+  }
+  .auth-badge.original { color: var(--green); }
+  .auth-badge.fake { color: var(--red); }
+  .auth-badge.unknown { color: var(--ink-soft); }
+
+  .barcode {
+    height: 36px;
+    margin-top: 22px;
+    background: repeating-linear-gradient(
+      90deg,
+      var(--ink) 0px, var(--ink) 2px,
+      transparent 2px, transparent 5px,
+      var(--ink) 5px, var(--ink) 6px,
+      transparent 6px, transparent 10px
+    );
+  }
+  .barcode-caption {
+    text-align: center;
+    font-size: 10px;
+    letter-spacing: 4px;
+    color: var(--ink-soft);
+    margin-top: 6px;
+  }
+
+  .thank-you {
+    text-align: center;
+    font-family: 'Special Elite', cursive;
+    font-size: 12px;
+    color: var(--ink-soft);
+    margin-top: 18px;
+    letter-spacing: 1px;
+  }
+
+  a.back-link {
+    display: block;
+    text-align: center;
+    margin-top: 16px;
+    font-size: 12px;
+    color: var(--ink-soft);
+    cursor: pointer;
+    text-decoration: underline;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .btn { transition: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="receipt-wrap">
+  <div class="receipt">
+
+    <div class="brand">
+      <span class="brand-main">PriceDetector</span>
+      <span class="brand-sub">EXPERTISE RECEIPT No. —</span>
+    </div>
+
+    <div class="meta-row">
+      <span id="dateNow"></span>
+      <span>REG #04</span>
+    </div>
+
+    <hr class="divider">
+
+      <!-- form -->
+    <div id="form-panel">
+      <h2 class="section-title">Item details</h2>
+
+      <div class="field-row">
+        <div class="field">
+          <label for="itemBrand">Brand</label>
+          <input type="text" id="itemBrand" placeholder="The North Face">
+        </div>
+        <div class="field">
+          <label for="itemName">Item</label>
+          <input type="text" id="itemName" placeholder="Fleece Jacket">
+        </div>
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label for="category">Category</label>
+          <select id="category">
+            <option value="CLOTHING">Clothing</option>
+            <option value="ACCESSORIES">Accessories</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="condition">Condition</label>
+          <input type="text" id="condition" placeholder="Good">
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="description">Description</label>
+        <textarea id="description" placeholder="Slightly worn, no visible damage"></textarea>
+      </div>
+
+      <div class="field">
+        <label for="sellerPrice">Seller price (€)</label>
+        <input type="number" id="sellerPrice" placeholder="45" step="0.01">
+      </div>
+
+      <div class="field">
+        <label for="additionalNotes">Additional notes (optional)</label>
+        <textarea id="additionalNotes" placeholder="Seller says bought last year at official store"></textarea>
+      </div>
+
+      <div class="file-field">
+        <label for="photos">Photos (optional — enables authenticity check)</label>
+        <input type="file" id="photos" accept="image/*" multiple>
+      </div>
+
+      <button class="btn" id="submitBtn" onclick="submitAnalysis()">Stamp this receipt</button>
+      <div id="status"></div>
+    </div>
+
+      <!-- result -->
+    <div id="result-panel">
+      <div class="stamp-wrap">
+        <span class="stamp" id="verdictStamp">—</span>
+      </div>
+
+      <div class="price-line">
+        <span class="label">Seller asks</span>
+        <span class="value" id="resSellerPrice">—</span>
+      </div>
+      <div class="price-line">
+        <span class="label">New retail (est.)</span>
+        <span class="value" id="resNewPrice">—</span>
+      </div>
+      <div class="price-line">
+        <span class="label">Typical resale (est.)</span>
+        <span class="value" id="resResalePrice">—</span>
+      </div>
+      <div class="price-line total">
+        <span class="label">Suggested price</span>
+        <span class="value" id="resSuggested">—</span>
+      </div>
+
+      <div id="authRow" style="text-align:center; margin-top:14px; display:none;">
+        <span class="auth-badge" id="authBadge">—</span>
+      </div>
+
+      <div class="barcode"></div>
+      <div class="barcode-caption" id="barcodeId">ID 0000000</div>
+
+      <div class="thank-you">* THANK YOU FOR SHOPPING SMART *</div>
+
+      <a class="back-link" onclick="resetForm()">← Check another item</a>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  const API_BASE = 'http://localhost:8080/analysis';
+
+  document.getElementById('dateNow').textContent = new Date().toLocaleDateString('en-GB', {
+    day: '2-digit', month: '2-digit', year: 'numeric'
+  });
+
+  function setStatus(msg, isError) {
+    const el = document.getElementById('status');
+    el.textContent = msg;
+    el.className = isError ? 'error' : '';
+  }
+
+  function fmtMoney(v) {
+    if (v === null || v === undefined) return '—';
+    return '€ ' + Number(v).toFixed(2);
+  }
+
+  function verdictLabel(v) {
+    if (v === 'BUY') return { text: 'BUY', cls: 'buy' };
+    if (v === 'NEGOTIATE') return { text: 'NEGOTIATE', cls: 'negotiate' };
+    if (v === 'DONT_BUY') return { text: "DON'T BUY", cls: 'dont-buy' };
+    return { text: v || '—', cls: 'negotiate' };
+  }
+
+  function authLabel(v) {
+    if (v === 'ORIGINAL') return { text: 'Looks original', cls: 'original' };
+    if (v === 'FAKE') return { text: 'Possibly fake', cls: 'fake' };
+    if (v === 'NOT_ENOUGH_INFORMATION') return { text: 'Not enough info', cls: 'unknown' };
+    return null;
+  }
+
+  async function submitAnalysis() {
+    const btn = document.getElementById('submitBtn');
+    const payload = {
+      itemBrand: document.getElementById('itemBrand').value,
+      itemName: document.getElementById('itemName').value,
+      category: document.getElementById('category').value,
+      condition: document.getElementById('condition').value,
+      description: document.getElementById('description').value,
+      sellerPrice: parseFloat(document.getElementById('sellerPrice').value || '0'),
+      additionalNotes: document.getElementById('additionalNotes').value || null
+    };
+
+    if (!payload.itemBrand || !payload.itemName || !payload.condition || !payload.description) {
+      setStatus('Fill in brand, item, condition and description first.', true);
+      return;
+    }
+
+    const files = document.getElementById('photos').files;
+
+    btn.disabled = true;
+    setStatus('Creating record…');
+
+    try {
+
+      const createRes = await fetch(API_BASE, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (!createRes.ok) {
+        const errText = await createRes.text();
+        throw new Error('Create failed: ' + errText);
+      }
+
+      const created = await createRes.json();
+      const newId = created.id || created.analysisId;
+
+      let finalResult;
+
+      if (files && files.length > 0) {
+
+        setStatus('Analyzing with photos…');
+        const formData = new FormData();
+        for (let i = 0; i < files.length; i++) {
+          formData.append('files', files[i]);
+        }
+
+        const photoRes = await fetch(`${API_BASE}/${newId}/analyze-photo`, {
+          method: 'POST',
+          body: formData
+        });
+
+        if (!photoRes.ok) throw new Error('Photo analysis failed: ' + await photoRes.text());
+        finalResult = await photoRes.json();
+
+      } else {
+
+        setStatus('Analyzing…');
+        const analyzeRes = await fetch(`${API_BASE}/${newId}/analyze`, { method: 'POST' });
+
+        if (!analyzeRes.ok) throw new Error('Analysis failed: ' + await analyzeRes.text());
+        finalResult = await analyzeRes.json();
+      }
+
+      renderResult(finalResult, newId);
+      setStatus('');
+
+    } catch (err) {
+      console.error(err);
+      setStatus('Something went wrong: ' + err.message, true);
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  function renderResult(data, id) {
+    const v = verdictLabel(data.verdict);
+    const stamp = document.getElementById('verdictStamp');
+    stamp.textContent = v.text;
+    stamp.className = 'stamp ' + v.cls;
+
+    document.getElementById('resSellerPrice').textContent = fmtMoney(data.sellerPrice);
+    document.getElementById('resNewPrice').textContent = fmtMoney(data.estimatedNewPrice);
+    document.getElementById('resResalePrice').textContent = fmtMoney(data.estimatedResalePrice);
+    document.getElementById('resSuggested').textContent = fmtMoney(data.suggestedPrice);
+
+    const auth = authLabel(data.authenticResult);
+    const authRow = document.getElementById('authRow');
+    if (auth) {
+      authRow.style.display = 'block';
+      const badge = document.getElementById('authBadge');
+      badge.textContent = auth.text;
+      badge.className = 'auth-badge ' + auth.cls;
+    }
+    else
+    {
+      authRow.style.display = 'none';
+    }
+
+    document.getElementById('barcodeId').textContent = 'ID ' + String(id).padStart(7, '0');
+
+    document.getElementById('form-panel').style.display = 'none';
+    document.getElementById('result-panel').style.display = 'block';
+  }
+
+  function resetForm() {
+    document.getElementById('form-panel').style.display = 'block';
+    document.getElementById('result-panel').style.display = 'none';
+    setStatus('');
+  }
+</script>
+
+</body>
+</html>

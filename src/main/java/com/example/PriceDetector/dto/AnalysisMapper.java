@@ -12,6 +12,7 @@ public class AnalysisMapper {
     public  AnalysisResponse toResponse(Analysis analysis)
     {
         AnalysisResponse response = new AnalysisResponse();
+        response.setId(analysis.getId());
         response.setItemName(analysis.getItemName());
         response.setItemBrand(analysis.getItemBrand());
         response.setCategory(analysis.getCategory());

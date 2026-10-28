@@ -43,7 +43,7 @@ public class AnalysisResponse {
     private BigDecimal suggestedPrice;
 
 
-    private String aiRawResponse;
+
 
     private AuthenticResult authenticResult;
 

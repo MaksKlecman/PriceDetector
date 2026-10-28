@@ -27,6 +27,7 @@ public class AnalysisService {
     private final AnalysisRepository repository;
     private final AnalysisMapper mapper;
     private final AiClient aiClient;
+    private final SearchService searchService;
 
     @Transactional
     public AnalysisResponse save(AnalysisRequest request)
@@ -54,7 +55,7 @@ public class AnalysisService {
 
 
 
-    private String buildPrompt(Analysis analysis)
+    private String buildPrompt(Analysis analysis, String marketData)
     {
         String notesLine = "";
         if (analysis.getAdditionalNotes() != null && !analysis.getAdditionalNotes().isEmpty())
@@ -71,6 +72,10 @@ public class AnalysisService {
                 "Description: " + analysis.getDescription() + "\n" +
                 "Seller price: " + analysis.getSellerPrice() + "\n" +
                 notesLine +
+                        "\nREAL-TIME MARKET SEARCH RESULTS FROM GOOGLE/STORES:\n" +
+                marketData + "\n" +
+                "Use the above real-time market search results to guide your price estimations!\n" +
+                "Respond ONLY with valid JSON in this exact format:\n" +
                 "Respond ONLY with valid JSON in this exact format:\n" +
                 "{\n" +
                 "  \"estimatedNewPrice\": <number>,\n" +
@@ -81,7 +86,7 @@ public class AnalysisService {
                 "}";
     }
 
-    private String buildPromptWithPhoto(Analysis analysis)
+    private String buildPromptWithPhoto(Analysis analysis, String marketData)
     {
         String notesLine = "";
         if (analysis.getAdditionalNotes() != null && !analysis.getAdditionalNotes().isEmpty())
@@ -97,6 +102,10 @@ public class AnalysisService {
                 "Description: " + analysis.getDescription() + "\n" +
                 "Seller price: " + analysis.getSellerPrice() + "\n" +
                 notesLine +
+                        "\nREAL-TIME MARKET SEARCH RESULTS FROM GOOGLE/STORES:\n" +
+                marketData + "\n" +
+                "Use the above real-time market search results to guide your price estimations!\n" +
+                "Respond ONLY with valid JSON in this exact format:\n" +
 
                 "Respond ONLY with valid JSON in this exact format:\n" +
                 "{\n" +
@@ -104,7 +113,7 @@ public class AnalysisService {
                 "  \"estimatedResalePrice\": <number>,\n" +
                 "  \"verdict\": \"BUY\" or \"DONT_BUY\" or \"NEGOTIATE\",\n" +
                 "  \"suggestedPrice\": <number>,\n" +
-                "  \"authenticResult\": \"FAKE\" or \" NOT_ENOUGH_INFORMATION\" or \"ORIGINAL\" " +
+                "  \"authenticResult\": \"FAKE\" or \"NOT_ENOUGH_INFORMATION\" or \"ORIGINAL\" " +
 
                 "}";
     }
@@ -113,16 +122,43 @@ public class AnalysisService {
     public AnalysisResponse runAiAnalysis(Long id) throws Exception {
         Analysis analysis = getAnalysis(id);
 
-        String prompt = buildPrompt(analysis);
+        String marketData = searchService.searchRealPrices(analysis.getItemBrand(), analysis.getItemName());
 
-        String aiResponse = aiClient.analyze(prompt);
+        String initialPrompt = buildPrompt(analysis,marketData );
+
+        String initialPromptResponse = aiClient.analyze(initialPrompt);
+
+        JsonNode initialPromptResult = extractJsonFromAiResponse(initialPromptResponse);
+
+        String verificationPrompt1 = buildVerificationPrompt(analysis, initialPromptResult);
+
+        String verificationPromptResponse1 = aiClient.analyze(verificationPrompt1);
+
+        JsonNode  verificationPromptResult1 = extractJsonFromAiResponse(verificationPromptResponse1);
+
+        String verificationPrompt2 =
+                buildVerificationPrompt2(analysis, verificationPromptResult1);
+
+        String verificationResponse2 =
+                aiClient.analyze(verificationPrompt2);
+
+        JsonNode finalResult =
+                extractJsonFromAiResponse(verificationResponse2);
 
 
-        analysis.setAiRawResponse(aiResponse);
 
-        JsonNode clearedRes = extractJsonFromAiResponse(aiResponse);
 
-        applyAiResults(analysis, clearedRes);
+
+
+
+
+
+
+
+        analysis.setAiRawResponse(finalResult.toString());
+
+
+        applyAiResults(analysis, finalResult);
 
         Analysis saved = repository.save(analysis);
 
@@ -141,11 +177,13 @@ public class AnalysisService {
             base64Images.add(rep);
         }
 
+        String marketData = searchService.searchRealPrices(analysis.getItemBrand(), analysis.getItemName());
 
 
-        String prompt = buildPromptWithPhoto(analysis);
 
-        String aiResponsePhoto = aiClient.analyzeWithPhoto(prompt, base64Images);
+        String prompt = buildPromptWithPhoto(analysis, marketData);
+
+        String aiResponsePhoto = aiClient.analyzeWithPhoto(prompt, files);
 
         analysis.setAiRawResponse(aiResponsePhoto);
 
@@ -163,46 +201,190 @@ public class AnalysisService {
 
     }
 
-    private JsonNode extractJsonFromAiResponse(String aiRawResponse) throws Exception
-    {
-        ObjectMapper mapper1 = new ObjectMapper();
+    private JsonNode extractJsonFromAiResponse(String aiResponse) throws Exception {
 
-        JsonNode root = mapper1.readTree(aiRawResponse);
+        ObjectMapper objectMapper = new ObjectMapper();
 
-        JsonNode contentArray = root.get("content");
+        JsonNode root = objectMapper.readTree(aiResponse);
 
-        JsonNode firstItem = contentArray.get(0);
+        JsonNode content = root.get("content");
 
-        String text = firstItem.get("text").asText();
+        if (content == null || !content.isArray() || content.isEmpty()) {
+            throw new IllegalArgumentException(
+                    "Anthropic response does not contain valid content"
+            );
+        }
 
-        String cleanedText = text.replace("```json", "").replace("```", "").trim();
+        JsonNode textNode = content.get(0).get("text");
 
+        if (textNode == null || textNode.isNull()) {
+            throw new IllegalArgumentException(
+                    "Anthropic response does not contain text"
+            );
+        }
 
+        String text = textNode.asText().trim();
 
-        return mapper1.readTree(cleanedText);
+        if (text.startsWith("```json")) {
+            text = text.substring("```json".length());
+        }
 
+        if (text.startsWith("```")) {
+            text = text.substring("```".length());
+        }
 
+        if (text.endsWith("```")) {
+            text = text.substring(0, text.length() - "```".length());
+        }
+
+        text = text.trim();
+
+        return objectMapper.readTree(text);
     }
 
-    private void applyAiResults(Analysis analysis, JsonNode jsonNode)
-    {
-        Double newPrice = jsonNode.get("estimatedNewPrice").asDouble();
-        analysis.setEstimatedNewPrice(BigDecimal.valueOf(newPrice));
 
-        Double newResPrice = jsonNode.get("estimatedResalePrice").asDouble();
-        analysis.setEstimatedResalePrice(BigDecimal.valueOf(newResPrice));
+    private String buildVerificationPrompt(
+            Analysis analysis,
+            JsonNode result
 
-        String newVerdict = jsonNode.get("verdict").asText();
-        analysis.setVerdict(Verdict.valueOf(newVerdict));
+    ) {
 
-        Double newSugPrice = jsonNode.get("suggestedPrice").asDouble();
-        analysis.setSuggestedPrice(BigDecimal.valueOf(newSugPrice));
+        return """
+            You are a verification AI.
 
+            Review the previous AI analysis of this item.
 
+            ITEM:
+            Brand: %s
+            Name: %s
+            Condition: %s
+            Seller's asking price: %s
 
+            PREVIOUS AI RESULT:
+            %s
 
+            Check the following:
 
+            1. Is estimatedNewPrice realistic?
+            2. Is estimatedResalePrice realistic compared to estimatedNewPrice?
+            3. Is suggestedPrice lower than or equal to the seller's asking price?
+            4. Is suggestedPrice reasonable compared to estimatedResalePrice?
+            5. Does the verdict match the numbers?
+            6. Are there obvious contradictions?
+            7. Are any prices suspiciously identical or arbitrary?
 
+            If something is wrong, correct it.
+
+            If everything is correct, keep the values unchanged.
+
+            Respond ONLY with valid JSON:
+
+            {
+              "estimatedNewPrice": <number>,
+              "estimatedResalePrice": <number>,
+              "verdict": "BUY" or "DONT_BUY" or "NEGOTIATE",
+              "suggestedPrice": <number>
+            }
+            """.formatted(
+                analysis.getItemBrand(),
+                analysis.getItemName(),
+                analysis.getCondition(),
+                analysis.getSellerPrice(),
+                result.toString()
+        );
+    }
+
+    private String buildVerificationPrompt2(
+            Analysis analysis,
+            JsonNode result
+    ) {
+
+        return """
+            You are the final quality-control AI.
+
+            Your job is to independently audit the previous AI result.
+
+            ITEM:
+            Brand: %s
+            Name: %s
+            Condition: %s
+            Seller's asking price: %s
+
+            RESULT FROM PREVIOUS VERIFICATION:
+            %s
+
+            Perform a strict final validation.
+
+            RULES:
+
+            1. estimatedNewPrice must be greater than 0.
+
+            2. estimatedResalePrice must be greater than 0.
+
+            3. For a used item, estimatedResalePrice should normally
+               be lower than estimatedNewPrice.
+
+            4. suggestedPrice must be greater than 0.
+
+            5. suggestedPrice should normally not exceed the seller's
+               asking price.
+
+            6. If the seller's price is significantly below the expected
+               resale value, BUY is generally appropriate.
+
+            7. If the seller's price is close to the expected resale value,
+               NEGOTIATE may be appropriate.
+
+            8. If the seller's price is significantly above the expected
+               resale value, DONT_BUY is generally appropriate.
+
+            9. Make sure the verdict is logically consistent with all prices.
+
+            10. Look for suspiciously round, identical or contradictory
+                numbers.
+
+            IMPORTANT:
+            Do not change correct values unnecessarily.
+            Only change a value if there is a logical reason to do so.
+
+            Return ONLY valid JSON:
+
+            {
+              "estimatedNewPrice": <number>,
+              "estimatedResalePrice": <number>,
+              "verdict": "BUY" or "DONT_BUY" or "NEGOTIATE",
+              "suggestedPrice": <number>
+            }
+            """.formatted(
+                analysis.getItemBrand(),
+                analysis.getItemName(),
+                analysis.getCondition(),
+                analysis.getSellerPrice(),
+                result.toString()
+        );
+    }
+
+    private void applyAiResults(
+            Analysis analysis,
+            JsonNode jsonNode
+    ) {
+
+        BigDecimal newPrice =
+                jsonNode.get("estimatedNewPrice").decimalValue();
+
+        BigDecimal resalePrice =
+                jsonNode.get("estimatedResalePrice").decimalValue();
+
+        BigDecimal suggestedPrice =
+                jsonNode.get("suggestedPrice").decimalValue();
+
+        String verdict =
+                jsonNode.get("verdict").asText();
+
+        analysis.setEstimatedNewPrice(newPrice);
+        analysis.setEstimatedResalePrice(resalePrice);
+        analysis.setSuggestedPrice(suggestedPrice);
+        analysis.setVerdict(Verdict.valueOf(verdict));
     }
 
 
@@ -217,6 +399,8 @@ public class AnalysisService {
 
 
     }
+
+
 
 
 }

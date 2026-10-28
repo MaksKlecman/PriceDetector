@@ -23,7 +23,6 @@ public class AnalysisMapper {
         response.setEstimatedResalePrice(analysis.getEstimatedResalePrice());
         response.setVerdict(analysis.getVerdict());
         response.setSuggestedPrice(analysis.getSuggestedPrice());
-        response.setAiRawResponse(analysis.getAiRawResponse());
         response.setAuthenticResult(analysis.getAuthenticResult());
         response.setAdditionalNotes(analysis.getAdditionalNotes());
         return response;

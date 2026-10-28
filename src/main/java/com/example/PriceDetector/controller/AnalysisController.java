@@ -3,11 +3,11 @@ package com.example.PriceDetector.controller;
 
 import com.example.PriceDetector.dto.AnalysisRequest;
 import com.example.PriceDetector.dto.AnalysisResponse;
-import com.example.PriceDetector.service.AiClient;
+
 import com.example.PriceDetector.service.AnalysisService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.boot.autoconfigure.graphql.GraphQlProperties;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -23,7 +23,7 @@ import java.util.List;
 public class AnalysisController {
     private final AnalysisService analysisService;
 
-    private final AiClient aiClient;
+
 
 
 

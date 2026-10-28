@@ -4,6 +4,6 @@ public class AnalysisNotFoundException extends RuntimeException
 {
     public AnalysisNotFoundException(Long id)
     {
-        super("Analisys of id not found" + id);
+        super("Analysis with id " + id + " not found");
     }
 }
